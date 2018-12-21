@@ -7,6 +7,9 @@
  */
 'use strict';
 
+// TODO: also install storybook with proper config in .storybook by creating a yarn/npm save dev call from here: https://storybook.js.org/basics/guide-react/
+//TODO: also add the storybook deploy command from KeyMap
+
 // Makes the script crash on unhandled rejections instead of silently
 // ignoring them. In the future, promise rejections that are not handled will
 // terminate the Node.js process with a non-zero exit code.
@@ -22,6 +25,7 @@ const spawn = require('react-dev-utils/crossSpawn');
 const { defaultBrowsers } = require('react-dev-utils/browsersHelper');
 const os = require('os');
 const verifyTypeScriptSetup = require('./utils/verifyTypeScriptSetup');
+const s3 = require('./s3');
 
 function isInGitRepository() {
   try {
@@ -99,6 +103,8 @@ module.exports = function(
     build: 'react-scripts build',
     test: 'react-scripts test',
     eject: 'react-scripts eject',
+    deploy: s3.getDeployScript(appName),
+    predeploy: 'npm run build'
   };
 
   // Setup the eslint config
@@ -171,6 +177,7 @@ module.exports = function(
     appPath,
     '.template.dependencies.json'
   );
+   
   if (fs.existsSync(templateDependenciesPath)) {
     const templateDependencies = require(templateDependenciesPath).dependencies;
     args = args.concat(
@@ -195,6 +202,25 @@ module.exports = function(
     }
   }
 
+  args = ['install', '--save', verbose && '--verbose'].filter(e => e);
+
+  const extraDependencies = {
+    "@blainelewis1/cefn" : "latest",
+    "@material-ui/core" : "^3.6.1"
+  }
+
+  args = args.concat(
+    Object.keys(extraDependencies).map(key => {
+      return `${key}@${extraDependencies[key]}`;
+    })
+  );
+
+  const proc = spawn.sync(command, args, { stdio: 'inherit' });
+  if (proc.status !== 0) {
+    console.error(`\`${command} ${args.join(' ')}\` failed`);
+    return;
+  }
+
   if (useTypeScript) {
     verifyTypeScriptSetup();
   }
@@ -203,6 +229,10 @@ module.exports = function(
     console.log();
     console.log('Initialized a git repository.');
   }
+
+  Promise.all([s3.createUploadsBucket(appName), s3.createWebsiteBucket(appName)]).then(
+    () => {
+
 
   // Display the most elegant way to cd.
   // This needs to handle an undefined originalDirectory for
@@ -256,7 +286,7 @@ module.exports = function(
   }
   console.log();
   console.log('Happy hacking!');
-};
+})}
 
 function isReactInstalled(appPackage) {
   const dependencies = appPackage.dependencies || {};

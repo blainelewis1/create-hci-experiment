@@ -1,6 +1,6 @@
 {
-  "name": "react-scripts",
-  "version": "2.1.1",
+  "name": "@blainelewis1/hci-scripts",
+  "version": "0.1.2",
   "description": "Configuration and scripts for Create React App.",
   "repository": "facebook/create-react-app",
   "license": "MIT",
@@ -26,6 +26,7 @@
   "dependencies": {
     "@babel/core": "7.1.6",
     "@svgr/webpack": "2.4.1",
+    "aws-sdk": "^2.378.0",
     "babel-core": "7.0.0-bridge.0",
     "babel-eslint": "9.0.0",
     "babel-jest": "23.6.0",
