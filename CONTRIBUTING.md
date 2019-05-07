@@ -94,7 +94,7 @@ Once it is done, you can modify any file locally and run `yarn start`, `yarn tes
 
 If you want to try out the end-to-end flow with the global CLI, you can do this too:
 
-```
+```sh
 yarn create-react-app my-app
 cd my-app
 ```
@@ -152,7 +152,7 @@ By default git would use `CRLF` line endings which would cause the scripts to fa
 9. Wait for a long time, and it will get published. Don’t worry that it’s stuck. In the end the publish script will prompt for versions before publishing the packages.
 10. After publishing, create a GitHub Release with the same text as the changelog entry. See previous Releases for inspiration.
 
-Make sure to test the released version! If you want to be extra careful, you can publish a prerelease by running `npm run publish -- --canary=next --exact --cd-version patch --npm-tag=next` instead of `npm run publish`.
+Make sure to test the released version! If you want to be extra careful, you can publish a prerelease by running `npm run publish -- prepatch --canary --preid next --dist-tag next --npm-client npm --force-publish` instead of `npm run publish`.
 
 ---
 
