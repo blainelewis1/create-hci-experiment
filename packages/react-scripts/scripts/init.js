@@ -104,7 +104,7 @@ module.exports = function(
     test: 'react-scripts test',
     eject: 'react-scripts eject',
     deploy: s3.getDeployScript(appName),
-    predeploy: 'npm run build'
+    predeploy: 'npm run build',
   };
 
   // Setup the eslint config
@@ -177,7 +177,7 @@ module.exports = function(
     appPath,
     '.template.dependencies.json'
   );
-   
+
   if (fs.existsSync(templateDependenciesPath)) {
     const templateDependencies = require(templateDependenciesPath).dependencies;
     args = args.concat(
@@ -205,9 +205,11 @@ module.exports = function(
   args = ['install', '--save', verbose && '--verbose'].filter(e => e);
 
   const extraDependencies = {
-    "@blainelewis1/cefn" : "latest",
-    "@material-ui/core" : "^3.6.1"
-  }
+    '@blainelewis1/cefn': 'latest',
+    'react-redux': '^7.0.3',
+    '@material-ui/core': '^3.9.3',
+    'styled-components': '^4.2.0',
+  };
 
   args = args.concat(
     Object.keys(extraDependencies).map(key => {
@@ -230,63 +232,67 @@ module.exports = function(
     console.log('Initialized a git repository.');
   }
 
-  Promise.all([s3.createUploadsBucket(appName), s3.createWebsiteBucket(appName)]).then(
-    () => {
+  Promise.all([
+    s3.createUploadsBucket(appName),
+    s3.createWebsiteBucket(appName),
+  ]).then(() => {
+    // Display the most elegant way to cd.
+    // This needs to handle an undefined originalDirectory for
+    // backward compatibility with old global-cli's.
+    let cdpath;
+    if (
+      originalDirectory &&
+      path.join(originalDirectory, appName) === appPath
+    ) {
+      cdpath = appName;
+    } else {
+      cdpath = appPath;
+    }
 
+    // Change displayed command to yarn instead of yarnpkg
+    const displayedCommand = useYarn ? 'yarn' : 'npm';
 
-  // Display the most elegant way to cd.
-  // This needs to handle an undefined originalDirectory for
-  // backward compatibility with old global-cli's.
-  let cdpath;
-  if (originalDirectory && path.join(originalDirectory, appName) === appPath) {
-    cdpath = appName;
-  } else {
-    cdpath = appPath;
-  }
-
-  // Change displayed command to yarn instead of yarnpkg
-  const displayedCommand = useYarn ? 'yarn' : 'npm';
-
-  console.log();
-  console.log(`Success! Created ${appName} at ${appPath}`);
-  console.log('Inside that directory, you can run several commands:');
-  console.log();
-  console.log(chalk.cyan(`  ${displayedCommand} start`));
-  console.log('    Starts the development server.');
-  console.log();
-  console.log(
-    chalk.cyan(`  ${displayedCommand} ${useYarn ? '' : 'run '}build`)
-  );
-  console.log('    Bundles the app into static files for production.');
-  console.log();
-  console.log(chalk.cyan(`  ${displayedCommand} test`));
-  console.log('    Starts the test runner.');
-  console.log();
-  console.log(
-    chalk.cyan(`  ${displayedCommand} ${useYarn ? '' : 'run '}eject`)
-  );
-  console.log(
-    '    Removes this tool and copies build dependencies, configuration files'
-  );
-  console.log(
-    '    and scripts into the app directory. If you do this, you can’t go back!'
-  );
-  console.log();
-  console.log('We suggest that you begin by typing:');
-  console.log();
-  console.log(chalk.cyan('  cd'), cdpath);
-  console.log(`  ${chalk.cyan(`${displayedCommand} start`)}`);
-  if (readmeExists) {
+    console.log();
+    console.log(`Success! Created ${appName} at ${appPath}`);
+    console.log('Inside that directory, you can run several commands:');
+    console.log();
+    console.log(chalk.cyan(`  ${displayedCommand} start`));
+    console.log('    Starts the development server.');
     console.log();
     console.log(
-      chalk.yellow(
-        'You had a `README.md` file, we renamed it to `README.old.md`'
-      )
+      chalk.cyan(`  ${displayedCommand} ${useYarn ? '' : 'run '}build`)
     );
-  }
-  console.log();
-  console.log('Happy hacking!');
-})}
+    console.log('    Bundles the app into static files for production.');
+    console.log();
+    console.log(chalk.cyan(`  ${displayedCommand} test`));
+    console.log('    Starts the test runner.');
+    console.log();
+    console.log(
+      chalk.cyan(`  ${displayedCommand} ${useYarn ? '' : 'run '}eject`)
+    );
+    console.log(
+      '    Removes this tool and copies build dependencies, configuration files'
+    );
+    console.log(
+      '    and scripts into the app directory. If you do this, you can’t go back!'
+    );
+    console.log();
+    console.log('We suggest that you begin by typing:');
+    console.log();
+    console.log(chalk.cyan('  cd'), cdpath);
+    console.log(`  ${chalk.cyan(`${displayedCommand} start`)}`);
+    if (readmeExists) {
+      console.log();
+      console.log(
+        chalk.yellow(
+          'You had a `README.md` file, we renamed it to `README.old.md`'
+        )
+      );
+    }
+    console.log();
+    console.log('Happy hacking!');
+  });
+};
 
 function isReactInstalled(appPackage) {
   const dependencies = appPackage.dependencies || {};
