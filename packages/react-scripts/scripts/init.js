@@ -205,7 +205,8 @@ module.exports = function(
   args = ['install', '--save', verbose && '--verbose'].filter(e => e);
 
   const extraDependencies = {
-    '@blainelewis1/cefn': 'latest',
+    '@hcikit/workflow': 'latest',
+    '@hcikit/tasks': 'latest',
     'react-redux': '^7.0.3',
     '@material-ui/core': '^3.9.3',
     'styled-components': '^4.2.0',
