@@ -26,7 +26,9 @@ const cognito = new AWS.CognitoIdentity();
 const iam = new AWS.IAM();
 
 Promise.all([createUploadsBucket(appName), createWebsiteBucket(appName)]).then(
-  () => {}
+  () => {
+    console.log('Finished setting up S3 uploads and website.');
+  }
 );
 
 appPackage.scripts = {
@@ -251,11 +253,3 @@ async function deleteWebsite(appName) {
     s3.deleteBucket({ Bucket: appName }).promise();
   }
 }
-
-module.exports = {
-  deleteWebsite,
-  getDeployScript,
-  createWebsiteBucket,
-  deleteUploads,
-  createUploadsBucket,
-};
