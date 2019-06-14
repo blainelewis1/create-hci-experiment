@@ -25,6 +25,7 @@ const script = scriptIndex === -1 ? args[0] : args[scriptIndex];
 const nodeArgs = scriptIndex > 0 ? args.slice(0, scriptIndex) : [];
 
 switch (script) {
+  case 's3':
   case 'build':
   case 'eject':
   case 'start':
