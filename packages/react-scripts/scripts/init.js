@@ -199,7 +199,13 @@ module.exports = function(
     }
   }
 
-  args = ['install', '--save', verbose && '--verbose'].filter(e => e);
+  if (useYarn) {
+    command = 'yarnpkg';
+    args = ['add'];
+  } else {
+    command = 'npm';
+    args = ['install', '--save', verbose && '--verbose'].filter(e => e);
+  }
 
   const extraDependencies = {
     '@hcikit/workflow': 'latest',
