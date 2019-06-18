@@ -210,9 +210,9 @@ module.exports = function(
   const extraDependencies = {
     '@hcikit/workflow': 'latest',
     '@hcikit/tasks': 'latest',
-    'react-redux': '^7.0.3',
-    '@material-ui/core': '^3.9.3',
-    'styled-components': '^4.2.0',
+    'react-redux': '^7.1.0',
+    '@material-ui/core': '^4.1.1',
+    'styled-components': '^4.3.1',
   };
 
   args = args.concat(
