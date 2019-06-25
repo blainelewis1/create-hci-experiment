@@ -33,10 +33,8 @@ Promise.all([createUploadsBucket(appName), createWebsiteBucket(appName)]).then(
   }
 );
 
-appPackage.scripts = {
-  deploy: getDeployScript(appName),
-  predeploy: 'npm run build',
-};
+appPackage.scripts.deploy = getDeployScript(appName);
+appPackage.scripts.predeploy = 'npm run build';
 
 fs.writeFileSync(
   path.join(appPath, 'package.json'),
