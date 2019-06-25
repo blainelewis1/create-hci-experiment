@@ -11,6 +11,7 @@ const fs = require('fs');
 const os = require('os');
 
 const path = require('path');
+const paths = require('../config/paths');
 
 // TODO: this should come from config...
 // TODO: the Secret key and everything should be prompted
@@ -18,7 +19,8 @@ AWS.config.region = 'us-east-2';
 
 const appPath = '.';
 
-const appPackage = require(path.join(appPath, 'package.json'));
+const appPackage = require(paths.appPackageJson);
+
 let appName = appPackage.name;
 
 const s3 = new AWS.S3();
