@@ -207,6 +207,7 @@ module.exports = function(
     args = ['install', '--save', verbose && '--verbose'].filter(e => e);
   }
 
+  // TODO: how to keep these up to date....
   const extraDependencies = {
     '@hcikit/workflow': 'latest',
     '@hcikit/tasks': 'latest',
