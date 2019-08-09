@@ -5,19 +5,23 @@
 
 const chalk = require('chalk');
 const AWS = require('aws-sdk');
-const inquirer = require('inquirer');
-const _ = require('lodash');
-const fs = require('fs');
+const fs = require('fs-extra');
 const os = require('os');
 
 const path = require('path');
 const paths = require('../config/paths');
 
-// TODO: this should come from config...
-// TODO: the Secret key and everything should be prompted
+const spawn = require('react-dev-utils/crossSpawn');
+
+// TODO: have something check if AWS and what not is setup properly
+// TODO: Explaining how to setup credentials is tricky, it would be nice if there was a better way.
+// TODO: should use a better way to get the region.
+
 AWS.config.region = 'us-east-2';
 
-const appPath = '.';
+const appPath = paths.appPath;
+
+const ownPath = paths.ownPath;
 
 const appPackage = require(paths.appPackageJson);
 
@@ -29,22 +33,64 @@ const iam = new AWS.IAM();
 
 Promise.all([createUploadsBucket(appName), createWebsiteBucket(appName)]).then(
   () => {
-    console.log('Finished setting up S3 uploads and website.');
+    console.log(`S3 Setup Complete!`);
+
+    console.log();
+
+    console.log(
+      `You still need to register the upload component and add it into your configuration to start logging.
+
+      ${chalk.yellow(`
+import S3Upload from "./S3Upload";
+
+registerTask("S3Upload", S3Upload);`)}
+`
+    );
+
+    console.log(`Add it to your config like:
+${chalk.yellow(`{
+  task: 'S3Upload',
+  filename: 'blaine_log',
+  experimenter: 'hello@world.com',
+}`)}
+    `);
+
+    console.log();
+
+    console.log(
+      `You can now deploy to s3 by running ${chalk.blue('npm run deploy')}.`
+    );
+
+    console.log(
+      `Your experiment will be accessible from ${chalk.green(
+        `https://${appName}.s3-website-${s3.config.region}.amazonaws.com/`
+      )}.`
+    );
+
+    console.log(
+      `You can view completed logs at ${chalk.green(
+        `https://s3.console.aws.amazon.com/s3/buckets/${appName}-uploads/`
+      )}.`
+    );
+
+    console.log(
+      `Or download them by running ${chalk.blue('npm run sync-data')}.`
+    );
+    console.log(
+      'For deploying and downloading logs you must first install the aws-cli.'
+    );
   }
 );
 
-appPackage.scripts.deploy = getDeployScript(appName);
+//TODO: this should use the node API so there isn't a dependency of a CLI application
+appPackage.scripts.deploy = `aws s3 sync build/ s3://${appName}`;
 appPackage.scripts.predeploy = 'npm run build';
+appPackage.scripts['sync-data'] = `aws s3 sync data/ s3://${appName}-uploads`;
 
 fs.writeFileSync(
   path.join(appPath, 'package.json'),
   JSON.stringify(appPackage, null, 2) + os.EOL
 );
-
-//TODO: this should use the node API so there isn't a dependency of a CLI application
-function getDeployScript(appName) {
-  return `aws s3 sync build/ s3://${appName}`;
-}
 
 async function createWebsiteBucket(appName) {
   console.log(`Creating bucket ${chalk.green(appName)}...`);
@@ -86,9 +132,6 @@ async function createWebsiteBucket(appName) {
     .promise();
 
   console.log(`Setup complete!`);
-  console.log(
-    `http://${appName}.s3-website-${s3.config.region}.amazonaws.com/`
-  );
 }
 
 async function createUploadsBucket(appName) {
@@ -125,6 +168,33 @@ async function createUploadsBucket(appName) {
     .promise();
 
   console.log(`Cognito pool ${chalk.blue(cognitoName)} created!`);
+
+  fs.writeFileSync(
+    path.join(appPath, 'src', 'S3Upload.js'),
+    `
+import { createS3Uploader } from "./s3Uploader";
+import { createUpload } from "@hcikit/tasks";
+
+let uploadComponent = createUpload(
+  createS3Uploader(
+    "${s3.config.region}",
+    "${cognitoIdentityPool.IdentityPoolId}",
+    "${appName}"
+  )
+);
+
+export default uploadComponent;
+`
+  );
+
+  fs.copySync(
+    path.join(ownPath, 'extra-scripts', 's3Uploader.js'),
+    path.join(appPath, 'src', 's3Uploader.js')
+  );
+
+  console.log(
+    `Cognito pool ID: ${chalk.green(cognitoIdentityPool.IdentityPoolId)}`
+  );
 
   var RoleName = `Cognito_${cognitoIdentityPool.IdentityPoolName}Unauth_Role`;
   var IdentityPoolId = cognitoIdentityPool.IdentityPoolId;
@@ -184,72 +254,22 @@ async function createUploadsBucket(appName) {
   ]);
 
   console.log('Uploads bucket setup complete!');
-}
-// // TODO: have something check if AWS and whatnot is setup properly
 
-async function deleteUploads(appName) {
-  appName = `${appName}-uploads`;
+  const useYarn = fs.existsSync(path.join(appPath, 'yarn.lock'));
 
-  const answer = await inquirer.prompt([
-    {
-      name: 'confirm',
-      type: 'confirm',
-      message: chalk.red(
-        'This is a destructive action! It deletes the uploads bucket, pool and IAM role.'
-      ),
-    },
-  ]);
+  let args;
+  let command;
 
-  if (answer.confirm) {
-    s3.deleteBucket({ Bucket: appName })
-      .promise()
-      .then(() => console.log(chalk.green(`Deleted bucket ${appName}.`)));
-
-    const IdentityPoolName = appName.replace(/[^\w]/g, '_');
-    var RoleName = `Cognito_${IdentityPoolName}Unauth_Role`;
-
-    const pools = await cognito.listIdentityPools({ MaxResults: 60 }).promise();
-    const IdentityPoolId = _.find(pools.IdentityPools, {
-      IdentityPoolName,
-    }).IdentityPoolId;
-
-    cognito
-      .deleteIdentityPool({ IdentityPoolId })
-      .promise()
-      .then(() =>
-        console.log(chalk.green(`Deleted cognito pool ${IdentityPoolName}.`))
-      );
-
-    iam
-      .deleteRolePolicy({
-        RoleName,
-        PolicyName: 'S3',
-      })
-      .promise()
-      .then(() => {
-        console.log(chalk.green(`Role Policy deleted.`));
-        iam
-          .deleteRole({ RoleName })
-          .promise()
-          .then(() =>
-            console.log(chalk.green(`Deleted IAM Role ${RoleName}.`))
-          );
-      });
+  if (useYarn) {
+    command = 'yarnpkg';
+    args = ['add'];
+  } else {
+    command = 'npm';
+    args = ['install', '--save'].filter(e => e);
   }
-}
 
-async function deleteWebsite(appName) {
-  const answer = await inquirer.prompt([
-    {
-      name: 'confirm',
-      type: 'confirm',
-      message: chalk.red(
-        'This is a destructive action! It deletes the website bucket.'
-      ),
-    },
-  ]);
+  args.push('aws-sdk');
 
-  if (answer.confirm) {
-    s3.deleteBucket({ Bucket: appName }).promise();
-  }
+  // TODO: error handling would be great.
+  spawn.sync(command, args, { stdio: 'inherit' });
 }
